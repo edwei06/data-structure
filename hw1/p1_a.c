@@ -3,7 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 
-// Define maximum size for stack
+// Define maximum size for stack and expressions
 #define MAX 1000
 
 // Structure to hold expression and its precedence
@@ -29,25 +29,24 @@ int isEmpty(Stack* stack) {
 }
 
 // Push an element onto the stack
-void push(Stack* stack, char* expr, int precedence) {
+void push(Stack* stack, const char* expr, int precedence) {
     if (stack->top >= MAX - 1) {
-        printf("Stack Overflow\n");
-        exit(1);
+        fprintf(stderr, "Stack Overflow\n");
+        exit(EXIT_FAILURE);
     }
     stack->top++;
-    strcpy(stack->data[stack->top].expr, expr);
+    strncpy(stack->data[stack->top].expr, expr, MAX - 1);
+    stack->data[stack->top].expr[MAX - 1] = '\0'; // Ensure null-termination
     stack->data[stack->top].precedence = precedence;
 }
 
 // Pop an element from the stack
 StackElement pop(Stack* stack) {
     if (isEmpty(stack)) {
-        printf("Invalid Prefix Expression\n");
-        exit(1);
+        fprintf(stderr, "Invalid Prefix Expression\n");
+        exit(EXIT_FAILURE);
     }
-    StackElement elem = stack->data[stack->top];
-    stack->top--;
-    return elem;
+    return stack->data[stack->top--];
 }
 
 // Function to check if a character is an operator
@@ -61,14 +60,20 @@ int getPrecedence(char c) {
         return 1;
     if (c == '*' || c == '/')
         return 2;
-    return 3; // For operands
+    return 3; // For operands and other characters
 }
 
 // Function to convert prefix to infix
-char* prefixToInfix(char* prefix) {
+char* prefixToInfix(const char* prefix) {
     Stack stack;
     initStack(&stack);
     int length = strlen(prefix);
+
+    if (length == 0) {
+        fprintf(stderr, "Empty Prefix Expression\n");
+        exit(EXIT_FAILURE);
+    }
+
     // Iterate from right to left
     for (int i = length - 1; i >= 0; i--) {
         char c = prefix[i];
@@ -77,11 +82,15 @@ char* prefixToInfix(char* prefix) {
             push(&stack, operand, getPrecedence(c));
         }
         else if (isOperator(c)) { // If operator, pop two operands
-            StackElement op1 = pop(&stack);
-            StackElement op2 = pop(&stack);
+            if (stack.top < 1) { // Ensure there are at least two operands
+                fprintf(stderr, "Invalid Prefix Expression\n");
+                exit(EXIT_FAILURE);
+            }
+            StackElement op1 = pop(&stack); // First operand (left)
+            StackElement op2 = pop(&stack); // Second operand (right)
             char temp[MAX] = "";
-            // Add parentheses if needed based on precedence
-            // If op1 has lower precedence, add parentheses
+
+            // Add parentheses if op1 has lower precedence
             if (op1.precedence < getPrecedence(c)) {
                 strcat(temp, "(");
                 strcat(temp, op1.expr);
@@ -90,11 +99,13 @@ char* prefixToInfix(char* prefix) {
             else {
                 strcat(temp, op1.expr);
             }
+
             // Add operator
             int len = strlen(temp);
             temp[len] = c;
             temp[len + 1] = '\0';
-            // If op2 has lower precedence, add parentheses
+
+            // Add parentheses if op2 has lower precedence
             if (op2.precedence < getPrecedence(c)) {
                 strcat(temp, "(");
                 strcat(temp, op2.expr);
@@ -103,31 +114,51 @@ char* prefixToInfix(char* prefix) {
             else {
                 strcat(temp, op2.expr);
             }
+
             // Push the new expression back to stack
             push(&stack, temp, getPrecedence(c));
         }
         else {
             // Invalid character
-            printf("Invalid character in prefix expression: %c\n", c);
-            exit(1);
+            fprintf(stderr, "Invalid character in prefix expression: %c\n", c);
+            exit(EXIT_FAILURE);
         }
     }
-    // The final expression is on top of the stack
+
+    // The final expression should be the only element in the stack
     if (stack.top != 0) {
-        printf("Invalid Prefix Expression\n");
-        exit(1);
+        fprintf(stderr, "Invalid Prefix Expression\n");
+        exit(EXIT_FAILURE);
     }
-    return stack.data[stack.top].expr;
+
+    // Allocate memory for the result
+    char* result = (char*)malloc(strlen(stack.data[stack.top].expr) + 1);
+    if (result == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+    strcpy(result, stack.data[stack.top].expr);
+    return result;
 }
 
 // Example usage
 int main() {
-    char prefix[100];
-    // Read prefix expression
-    scanf("%s", prefix);
+    char prefix[MAX];
+
+    // Read prefix expression without additional prompts
+    if (scanf("%999s", prefix) != 1) { // Limit input to prevent buffer overflow
+        fprintf(stderr, "Failed to read prefix expression.\n");
+        return EXIT_FAILURE;
+    }
+
     // Convert to infix
     char* infix = prefixToInfix(prefix);
+
     // Print infix expression
     printf("%s\n", infix);
-    return 0;
+
+    // Free allocated memory
+    free(infix);
+
+    return EXIT_SUCCESS;
 }
