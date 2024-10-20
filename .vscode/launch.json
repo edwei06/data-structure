@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/Users/weijinghao/vscode/data_structure",
-      "program": "/Users/weijinghao/vscode/data_structure/build/Debug/outDebug"
+      "cwd": "/Users/weijinghao/vscode/data_structure/hw1",
+      "program": "/Users/weijinghao/vscode/data_structure/hw1/build/Debug/outDebug"
     }
   ]
 }

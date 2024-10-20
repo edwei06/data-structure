@@ -1,152 +1,134 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 
-// Define the maximum size of the heap
-#define MAX_HEAP_SIZE 1000
+// Define maximum heap size
+#define MAX_HEAP_SIZE 100000
 
-// Function to swap two integers
+// Heap structure
+typedef struct {
+    int arr[MAX_HEAP_SIZE];
+    int size;
+} MinHeap;
+
+// Function to initialize the heap
+void initHeap(MinHeap *heap) {
+    heap->size = 0;
+}
+
+// Swap two elements in the heap
 void swap(int *a, int *b) {
     int temp = *a;
     *a = *b;
     *b = temp;
 }
 
-// Function to initialize the heap
-void initHeap(int heap[], int *size) {
-    *size = 0;
-}
-
-// Function to find the index of an element in the heap
-int findElement(int heap[], int size, int x) {
-    for(int i = 0; i < size; i++) {
-        if(heap[i] == x)
-            return i;
-    }
-    return -1; // Element not found
-}
-
-// Function to heapify up from a given index
-void heapify_up(int heap[], int index) {
-    while(index > 0) {
+// Percolate up to maintain heap property
+void percolateUp(MinHeap *heap, int index) {
+    while (index > 0) {
         int parent = (index - 1) / 2;
-        if(heap[index] < heap[parent]) {
-            swap(&heap[index], &heap[parent]);
+        if (heap->arr[index] < heap->arr[parent]) {
+            swap(&heap->arr[index], &heap->arr[parent]);
             index = parent;
-        }
-        else {
+        } else {
             break;
         }
     }
 }
 
-// Function to heapify down from a given index
-void heapify_down(int heap[], int size, int index) {
-    while(2 * index + 1 < size) { // While there is at least a left child
+// Percolate down to maintain heap property
+void percolateDown(MinHeap *heap, int index) {
+    while (1) {
+        int smallest = index;
         int left = 2 * index + 1;
         int right = 2 * index + 2;
-        int smallest = index;
 
-        if(left < size && heap[left] < heap[smallest]) {
+        if (left < heap->size && heap->arr[left] < heap->arr[smallest]) {
             smallest = left;
         }
-        if(right < size && heap[right] < heap[smallest]) {
+
+        if (right < heap->size && heap->arr[right] < heap->arr[smallest]) {
             smallest = right;
         }
-        if(smallest != index) {
-            swap(&heap[index], &heap[smallest]);
+
+        if (smallest != index) {
+            swap(&heap->arr[index], &heap->arr[smallest]);
             index = smallest;
-        }
-        else {
+        } else {
             break;
         }
     }
 }
 
-// Function to insert an element into the heap
-void insertHeap(int heap[], int *size, int x) {
-    if(*size >= MAX_HEAP_SIZE) {
-        printf("Heap Overflow\n");
-        exit(1);
+// Insert an element into the heap
+void insert(MinHeap *heap, int key) {
+    if (heap->size >= MAX_HEAP_SIZE) {
+        // Heap is full, cannot insert
+        return;
     }
-    heap[*size] = x;
-    heapify_up(heap, *size);
-    (*size)++;
+    heap->arr[heap->size] = key;
+    percolateUp(heap, heap->size);
+    heap->size++;
 }
 
-// Function to delete an element from the heap
-void deleteHeap(int heap[], int *size, int x) {
-    int index = findElement(heap, *size, x);
-    if(index == -1) {
-        // Element not found; according to problem statement, assume valid operations
-        // Optionally, print a message or handle the error
+// Find the index of a given key in the heap
+int find(MinHeap *heap, int key) {
+    for (int i = 0; i < heap->size; i++) {
+        if (heap->arr[i] == key) {
+            return i;
+        }
+    }
+    return -1; // Not found
+}
+
+// Delete an element from the heap
+void deleteKey(MinHeap *heap, int key) {
+    int index = find(heap, key);
+    if (index == -1) {
+        // Key not found, do nothing
         return;
     }
 
-    // Replace the element with the last element
-    heap[index] = heap[*size - 1];
-    (*size)--;
+    // Replace with the last element
+    heap->arr[index] = heap->arr[heap->size - 1];
+    heap->size--;
 
-    // Heapify down from the replaced position
-    heapify_down(heap, *size, index);
-
-    // Additionally, heapify up in case the replaced element is smaller than its parent
-    heapify_up(heap, index);
-}
-
-// Function to print the heap in level-order
-void printHeap(int heap[], int size) {
-    if(size == 0) {
-        printf("\n");
-        return;
+    if (index < heap->size) {
+        // Try percolating up and down to restore heap property
+        percolateUp(heap, index);
+        percolateDown(heap, index);
     }
-    printf("%d", heap[0]);
-    for(int i = 1; i < size; i++) {
-        printf(" %d", heap[i]);
-    }
-    printf("\n");
 }
 
 int main() {
-    int heap[MAX_HEAP_SIZE];
-    int size;
-    initHeap(heap, &size);
+    MinHeap heap;
+    initHeap(&heap);
 
-    char command[10];
-    int number;
-    printf("the program will stop once you type exit or it's EOF\n");
-    // Read commands until "exit" is entered
-    while(1) {
-        if(scanf("%s", command) != 1) {
-            break; // EOF reached
-        }
+    char command[20];
+    int value;
 
-        if(strcmp(command, "exit") == 0) {
-            break; // Exit command received
-        }
-
-        if(strcmp(command, "insert") == 0) {
-            if(scanf("%d", &number) != 1) {
-                printf("Invalid input for insert command.\n");
-                exit(1);
+    // Read until EOF
+    while (scanf("%s", command) != EOF) {
+        if (strcmp(command, "insert") == 0) {
+            if (scanf("%d", &value) != 1) {
+                // Invalid input, exit
+                break;
             }
-            insertHeap(heap, &size, number);
-        }
-        else if(strcmp(command, "delete") == 0) {
-            if(scanf("%d", &number) != 1) {
-                printf("Invalid input for delete command.\n");
-                exit(1);
+            insert(&heap, value);
+        } else if (strcmp(command, "delete") == 0) {
+            if (scanf("%d", &value) != 1) {
+                // Invalid input, exit
+                break;
             }
-            deleteHeap(heap, &size, number);
+            deleteKey(&heap, value);
         }
-        else {
-            printf("Invalid command: %s\n", command);
-            exit(1);
-        }
+        // Ignore invalid commands
     }
 
-    // Print the final heap in level-order
-    printHeap(heap, size);
+    // Print the heap in level-order
+    for (int i = 0; i < heap.size; i++) {
+        printf("%d ", heap.arr[i]);
+    }
 
     return 0;
 }
