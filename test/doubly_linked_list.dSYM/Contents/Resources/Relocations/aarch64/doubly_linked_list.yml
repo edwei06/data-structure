@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     '/Users/weijinghao/vscode/data_structure/test/doubly_linked_list'
-relocations:     []
-...
