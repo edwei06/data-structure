@@ -1,3 +1,5 @@
 .vscode/
 *.exe
 .DS_Store
+# Alternatively, ignore all files without an extension recursively
+**/*
